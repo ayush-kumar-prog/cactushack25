@@ -6,6 +6,8 @@ import {
   SafeAreaView,
   Alert,
   Dimensions,
+  AppState,
+  AppStateStatus,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -73,6 +75,33 @@ export default function App() {
   // Local state
   const [cameraLayout, setCameraLayout] = useState({ width: 0, height: 0 });
   const [hasGreeted, setHasGreeted] = useState(false);
+  const [appState, setAppState] = useState(AppState.currentState);
+  const [cameraKey, setCameraKey] = useState(0);
+
+  // Fix for camera not loading on reload - give native resource time to release
+  const [isCameraMounted, setIsCameraMounted] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsCameraMounted(true);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Handle app state changes
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      console.log(`${DEBUG_PREFIX} 📱 App state changed to:`, nextAppState);
+      if (appState.match(/inactive|background/) && nextAppState === 'active') {
+        console.log(`${DEBUG_PREFIX} 📱 App came to foreground - remounting camera`);
+        setCameraKey(prev => prev + 1);
+      }
+      setAppState(nextAppState);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [appState]);
 
   // Request camera permission on mount
   useEffect(() => {
@@ -89,7 +118,7 @@ export default function App() {
     if (permission?.granted && !hasGreeted) {
       console.log(`${DEBUG_PREFIX} Playing initial greeting...`);
       setHasGreeted(true);
-      const greeting = "I see someone who may need help. Are they responsive? Shake their shoulders and call out.";
+      const greeting = "What can I help you with?";
       setInitialInstruction(greeting);
       speak(greeting);
     }
@@ -177,21 +206,18 @@ export default function App() {
             EmergencyAR needs camera access to analyze the patient and guide you through emergency procedures.
           </Text>
           <View style={styles.permissionButton}>
-            <LinearGradient
-              colors={[Colors.info, '#0066CC']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.permissionButtonGradient}
-            >
+            <View style={styles.permissionButtonGradient}>
               <Text style={styles.permissionButtonText} onPress={requestPermission}>
                 Enable Camera
               </Text>
-            </LinearGradient>
+            </View>
           </View>
         </View>
       </SafeAreaView>
     );
   }
+
+
 
   return (
     <View style={styles.container}>
@@ -205,21 +231,18 @@ export default function App() {
           setCameraLayout({ width, height });
         }}
       >
-        <CameraView
-          ref={cameraRef}
-          style={styles.camera}
-          facing="back"
-        />
+        {appState === 'active' && isCameraMounted && (
+          <CameraView
+            key={cameraKey}
+            ref={cameraRef}
+            style={styles.camera}
+            facing="back"
+            onMountError={(e) => console.error(`${DEBUG_PREFIX} ❌ Camera mount error:`, e)}
+          />
+        )}
 
-        {/* Vignette overlay for focus */}
-        <LinearGradient
-          colors={[
-            'rgba(0,0,0,0.4)',
-            'transparent',
-            'transparent',
-            'rgba(0,0,0,0.6)',
-          ]}
-          locations={[0, 0.15, 0.7, 1]}
+        {/* Vignette overlay for focus - Sharp edges for Nothing OS */}
+        <View
           style={styles.vignette}
           pointerEvents="none"
         />
@@ -298,6 +321,8 @@ const styles = StyleSheet.create({
   },
   vignette: {
     ...StyleSheet.absoluteFillObject,
+    borderWidth: 2,
+    borderColor: Colors.borderLight,
   },
   arOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -305,6 +330,8 @@ const styles = StyleSheet.create({
   controlArea: {
     backgroundColor: Colors.background,
     paddingTop: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
   },
   transcriptContainer: {
     paddingHorizontal: Spacing.xl,
@@ -312,17 +339,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   transcriptLabel: {
-    fontSize: 12,
+    fontSize: 10,
     color: Colors.textTertiary,
     marginBottom: Spacing.xs,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
+    fontFamily: 'monospace',
   },
   transcript: {
     fontSize: 16,
     color: Colors.textSecondary,
-    fontStyle: 'italic',
     textAlign: 'center',
+    fontFamily: 'monospace',
   },
   // Permission screen styles
   permissionContainer: {
@@ -330,6 +358,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.xxl,
+    backgroundColor: Colors.background,
   },
   permissionIconContainer: {
     marginBottom: Spacing.xxl,
@@ -337,27 +366,27 @@ const styles = StyleSheet.create({
   permissionIcon: {
     width: 80,
     height: 80,
-    borderRadius: BorderRadius.lg,
-    backgroundColor: Colors.surfaceElevated,
+    borderRadius: BorderRadius.sm, // Sharp corners
+    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.accent,
   },
   cameraIconBody: {
     width: 40,
     height: 30,
-    borderRadius: 6,
-    borderWidth: 3,
-    borderColor: Colors.textSecondary,
+    borderRadius: 2,
+    borderWidth: 2,
+    borderColor: Colors.textPrimary,
   },
   cameraIconLens: {
     position: 'absolute',
     width: 16,
     height: 16,
     borderRadius: 8,
-    borderWidth: 3,
-    borderColor: Colors.textSecondary,
+    borderWidth: 2,
+    borderColor: Colors.accent,
   },
   permissionTitle: {
     fontSize: 24,
@@ -365,26 +394,34 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     marginBottom: Spacing.lg,
     textAlign: 'center',
+    fontFamily: 'monospace',
+    textTransform: 'uppercase',
   },
   permissionText: {
-    fontSize: 16,
+    fontSize: 14,
     color: Colors.textSecondary,
     textAlign: 'center',
     marginBottom: Spacing.xxl,
-    lineHeight: 24,
+    lineHeight: 20,
+    fontFamily: 'monospace',
   },
   permissionButton: {
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.sm,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: Colors.accent,
   },
   permissionButtonGradient: {
     paddingHorizontal: Spacing.xxl,
     paddingVertical: Spacing.lg,
+    backgroundColor: Colors.surface,
   },
   permissionButtonText: {
-    color: Colors.textPrimary,
-    fontSize: 17,
-    fontWeight: '600',
+    color: Colors.accent,
+    fontSize: 16,
+    fontWeight: '700',
     textAlign: 'center',
+    fontFamily: 'monospace',
+    textTransform: 'uppercase',
   },
 });

@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
-import { BlurView } from 'expo-blur';
 import { Colors, BorderRadius, Spacing, Typography } from '../theme';
 
 interface SpeechBubbleProps {
@@ -71,7 +70,7 @@ export function SpeechBubble({ text, visible = true }: SpeechBubbleProps) {
         },
       ]}
     >
-      <BlurView intensity={60} tint="dark" style={styles.blurContainer}>
+      <View style={styles.blurContainer}>
         <View style={styles.innerContainer}>
           {/* AI indicator */}
           <View style={styles.aiIndicator}>
@@ -82,7 +81,7 @@ export function SpeechBubble({ text, visible = true }: SpeechBubbleProps) {
           {/* Instruction text */}
           <Text style={styles.text}>{text}</Text>
         </View>
-      </BlurView>
+      </View>
     </Animated.View>
   );
 }
@@ -95,38 +94,42 @@ const styles = StyleSheet.create({
     right: Spacing.lg,
   },
   blurContainer: {
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.sm,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: Colors.border,
+    backgroundColor: Colors.background, // Solid black
   },
   innerContainer: {
     padding: Spacing.lg,
-    backgroundColor: Colors.surfaceOverlay,
   },
   aiIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+    paddingBottom: Spacing.xs,
   },
   aiDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: Colors.success,
-    marginRight: Spacing.xs,
+    width: 8,
+    height: 8,
+    borderRadius: 0, // Square dot
+    backgroundColor: Colors.accent,
+    marginRight: Spacing.sm,
   },
   aiLabel: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     color: Colors.textSecondary,
-    letterSpacing: 0.5,
+    letterSpacing: 1,
+    fontFamily: 'monospace',
+    textTransform: 'uppercase',
   },
   text: {
     fontSize: 18,
     fontWeight: '500',
     color: Colors.textPrimary,
     lineHeight: 26,
-    letterSpacing: -0.3,
+    letterSpacing: 0.5,
+    fontFamily: 'monospace',
   },
 });

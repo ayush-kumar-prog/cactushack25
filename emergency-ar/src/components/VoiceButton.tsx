@@ -6,7 +6,6 @@ import {
   Animated,
   Easing,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { Colors, Shadows, BorderRadius } from '../theme';
 
@@ -203,12 +202,7 @@ export function VoiceButton({
           disabled={isProcessing}
           style={styles.touchable}
         >
-          <LinearGradient
-            colors={getButtonColors()}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.buttonGradient}
-          >
+          <View style={styles.buttonGradient}>
             {/* Border ring */}
             <View style={styles.borderRing}>
               {/* Processing spinner ring */}
@@ -234,7 +228,7 @@ export function VoiceButton({
                 )}
               </View>
             </View>
-          </LinearGradient>
+          </View>
         </TouchableOpacity>
       </Animated.View>
 
@@ -249,8 +243,8 @@ export function VoiceButton({
         {isProcessing
           ? 'Analyzing...'
           : isListening
-          ? 'Listening...'
-          : 'Tap to Speak'}
+            ? 'Listening...'
+            : 'Tap to Speak'}
       </Animated.Text>
     </View>
   );
@@ -305,6 +299,8 @@ const styles = StyleSheet.create({
     width: BUTTON_SIZE,
     height: BUTTON_SIZE,
     borderRadius: BUTTON_SIZE / 2,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   touchable: {
     flex: 1,
@@ -314,11 +310,12 @@ const styles = StyleSheet.create({
     borderRadius: BUTTON_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: Colors.surface, // Solid background
   },
   borderRing: {
-    width: BUTTON_SIZE - 4,
-    height: BUTTON_SIZE - 4,
-    borderRadius: (BUTTON_SIZE - 4) / 2,
+    width: BUTTON_SIZE - 8,
+    height: BUTTON_SIZE - 8,
+    borderRadius: (BUTTON_SIZE - 8) / 2,
     borderWidth: 2,
     borderColor: Colors.border,
     alignItems: 'center',
@@ -326,12 +323,12 @@ const styles = StyleSheet.create({
   },
   spinnerRing: {
     position: 'absolute',
-    width: BUTTON_SIZE - 4,
-    height: BUTTON_SIZE - 4,
-    borderRadius: (BUTTON_SIZE - 4) / 2,
-    borderWidth: 3,
+    width: BUTTON_SIZE - 8,
+    height: BUTTON_SIZE - 8,
+    borderRadius: (BUTTON_SIZE - 8) / 2,
+    borderWidth: 2,
     borderColor: 'transparent',
-    borderTopColor: Colors.textPrimary,
+    borderTopColor: Colors.accent, // Red spinner
   },
   iconContainer: {
     alignItems: 'center',
@@ -347,7 +344,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   micBodyActive: {
-    backgroundColor: Colors.textPrimary,
+    backgroundColor: Colors.accent, // Red when active
   },
   micStandContainer: {
     alignItems: 'center',
@@ -359,7 +356,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.textPrimary,
   },
   micStandActive: {
-    backgroundColor: Colors.textPrimary,
+    backgroundColor: Colors.accent,
   },
   micBase: {
     width: 16,
@@ -368,7 +365,7 @@ const styles = StyleSheet.create({
     borderRadius: 1,
   },
   micBaseActive: {
-    backgroundColor: Colors.textPrimary,
+    backgroundColor: Colors.accent,
   },
   processingDots: {
     flexDirection: 'row',
@@ -376,10 +373,10 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.textPrimary,
+    width: 6,
+    height: 6,
+    borderRadius: 0, // Square dots
+    backgroundColor: Colors.accent,
   },
   dot1: {
     opacity: 0.4,
@@ -392,15 +389,17 @@ const styles = StyleSheet.create({
   },
   label: {
     marginTop: 12,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '500',
     color: Colors.textSecondary,
-    letterSpacing: -0.24,
+    letterSpacing: 1,
+    fontFamily: 'monospace',
+    textTransform: 'uppercase',
   },
   labelActive: {
-    color: Colors.success,
+    color: Colors.accent,
   },
   labelProcessing: {
-    color: Colors.info,
+    color: Colors.textPrimary,
   },
 });

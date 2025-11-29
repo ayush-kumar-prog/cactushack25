@@ -3,6 +3,7 @@ import { CameraView } from 'expo-camera';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as Location from 'expo-location';
 import { analyzeAndRespond, isGeminiConfigured, getPatientDescription } from '../services/GeminiService';
+
 import { speak } from '../services/TTSService';
 import {
   PatientAssessment,
@@ -87,11 +88,20 @@ export function useConversation(
           const captureStart = logTiming('📷 Camera capture STARTED');
           try {
             // Capture at lower quality first
-            const photo = await cameraRef.current.takePictureAsync({
+            // Capture at lower quality first with timeout
+            const photoPromise = cameraRef.current.takePictureAsync({
               base64: false, // Don't get base64 yet - we'll resize first
               quality: 0.3,
               skipProcessing: true,
             });
+
+            // Race against a timeout
+            const TIMEOUT_MS = 1500;
+            const timeoutPromise = new Promise<null>((_, reject) =>
+              setTimeout(() => reject(new Error('Camera capture timed out')), TIMEOUT_MS)
+            );
+
+            const photo = await Promise.race([photoPromise, timeoutPromise]) as any;
 
             if (photo?.uri) {
               const resizeStart = logTiming('📷 Image resize STARTED');
@@ -113,7 +123,7 @@ export function useConversation(
             logTiming('📷 Camera capture + resize COMPLETE', captureStart);
             console.log(`${DEBUG_PREFIX} 📷 Image base64 length:`, imageBase64?.length || 0);
             if (imageBase64) {
-              console.log(`${DEBUG_PREFIX} 📷 Image size: ~${Math.round((imageBase64.length * 3/4) / 1024)}KB (resized to 320x240)`);
+              console.log(`${DEBUG_PREFIX} 📷 Image size: ~${Math.round((imageBase64.length * 3 / 4) / 1024)}KB (resized to 320x240)`);
             }
           } catch (e) {
             console.warn(`${DEBUG_PREFIX} ⚠️ Failed to capture frame:`, e);
@@ -133,26 +143,22 @@ export function useConversation(
         let response: string;
         let marker: string | undefined;
 
-        console.log(`${DEBUG_PREFIX} 🤖 Gemini configured:`, isGeminiConfigured());
-
+        // Use Gemini API directly
         if (isGeminiConfigured()) {
-          const geminiStart = logTiming('🤖 Gemini API call STARTED');
-          console.log(`${DEBUG_PREFIX} 🤖 Sending to Gemini with image: ${!!imageBase64}`);
-
-          const result = await analyzeAndRespond(imageBase64, updatedMessages);
-
-          logTiming('🤖 Gemini API call COMPLETE', geminiStart);
-          response = result.response;
-          marker = result.marker;
-          console.log(`${DEBUG_PREFIX} 🤖 Response: "${response.substring(0, 80)}..."`);
-          console.log(`${DEBUG_PREFIX} 🤖 Marker:`, marker || 'none');
+          try {
+            const geminiStart = logTiming('🤖 Gemini API call STARTED');
+            const result = await analyzeAndRespond(imageBase64, updatedMessages);
+            logTiming('🤖 Gemini API call COMPLETE', geminiStart);
+            response = result.response;
+            marker = result.marker;
+          } catch (e) {
+            console.error(`${DEBUG_PREFIX} ❌ Gemini API failed:`, e);
+            response = "I'm having trouble connecting. Please try again.";
+          }
         } else {
-          // Fallback for demo without API key
-          console.log(`${DEBUG_PREFIX} 📝 Using simulated response (no API key)`);
+          console.warn(`${DEBUG_PREFIX} ⚠️ Gemini not configured, using simulated response`);
           response = getSimulatedResponse(userText, updatedMessages.length);
           marker = getSimulatedMarker(updatedMessages.length);
-          console.log(`${DEBUG_PREFIX} 📝 Simulated response:`, response);
-          console.log(`${DEBUG_PREFIX} 📝 Simulated marker:`, marker);
         }
 
         // Update state
@@ -287,25 +293,25 @@ function getSimulatedResponse(userText: string, messageCount: number): string {
 
   // Check for key phrases
   if (text.includes('not responsive') || text.includes('not moving') || text.includes('unconscious')) {
-    return "Check if they are breathing. Look at their chest for movement.";
+    return "Okay. Check if they are breathing. Look at their chest for movement.";
   }
   if (text.includes('not breathing') || text.includes('no breathing')) {
-    return "Check for a pulse at their neck. Feel for 10 seconds.";
+    return "Right. Check for a pulse at their neck. Feel for 10 seconds.";
   }
   if (text.includes('no pulse') || text.includes("can't feel")) {
-    return "Begin CPR now. Push hard and fast on the center of their chest.";
+    return "Start CPR immediately. Push hard and fast on the center of their chest.";
   }
   if (text.includes('breathing') || text.includes('pulse')) {
-    return "Good. Keep monitoring them. Place them in the recovery position if breathing.";
+    return "That's good. Keep monitoring them. Place them in the recovery position if breathing.";
   }
 
   // Default progression based on message count
   const responses = [
-    "Is the person responsive? Shake their shoulders and call out.",
-    "Check if they are breathing. Watch their chest for 10 seconds.",
-    "Feel for a pulse at their neck. Use two fingers.",
-    "Begin CPR if there's no pulse. Push hard and fast on the chest.",
-    "Continue CPR. 30 compressions, then 2 breaths. Keep going.",
+    "I'm here to help. Is the person responsive? Shake their shoulders and call out.",
+    "Okay, check if they are breathing. Watch their chest for 10 seconds.",
+    "Now feel for a pulse at their neck. Use two fingers.",
+    "If there's no pulse, begin CPR. Push hard and fast on the chest.",
+    "Keep going with CPR. 30 compressions, then 2 breaths. You're doing great.",
   ];
 
   return responses[Math.min(messageCount, responses.length - 1)];

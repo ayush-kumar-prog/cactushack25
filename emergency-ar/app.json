@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "EmergencyAR v2",
-    "slug": "emergency-ar-v2",
-    "version": "2.0.0",
+    "name": "EmergencyAR v3",
+    "slug": "emergency-ar-v3",
+    "version": "3.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.hackathon.emergencyar",
+      "bundleIdentifier": "com.hackathon.emergencyarv3",
       "infoPlist": {
         "NSCameraUsageDescription": "This app needs camera access to analyze the patient and guide you through emergency procedures.",
         "NSMicrophoneUsageDescription": "This app needs microphone access to hear your voice commands.",
@@ -27,7 +27,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#E53935"
       },
-      "package": "com.hackathon.emergencyarv2",
+      "package": "com.hackathon.emergencyarv3",
       "permissions": [
         "CAMERA",
         "RECORD_AUDIO",

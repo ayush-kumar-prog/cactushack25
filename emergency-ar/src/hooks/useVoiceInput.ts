@@ -38,6 +38,8 @@ export function useVoiceInput(): UseVoiceInputReturn {
   const isListeningRef = useRef(false); // For toggle function
 
   console.log(`${DEBUG_PREFIX} Hook initialized with expo-speech-recognition`);
+  console.log(`${DEBUG_PREFIX} ExpoSpeechRecognitionModule available:`, !!ExpoSpeechRecognitionModule);
+
 
   // Set up event listeners using the hook
   useSpeechRecognitionEvent('start', () => {
@@ -61,11 +63,30 @@ export function useVoiceInput(): UseVoiceInputReturn {
       const result = event.results[0]?.transcript || '';
       console.log(`${DEBUG_PREFIX} 📝 Transcript: "${result}"`);
       setTranscript(result);
+
+      // Reset silence timer on every new result
+      resetSilenceTimer();
+
       if (listenStartTime.current) {
         console.log(`${DEBUG_PREFIX} ⏱️ Time from listen start to result: ${resultTime - listenStartTime.current}ms`);
       }
     }
   });
+
+  // Silence timer ref
+  const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const resetSilenceTimer = useCallback(() => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+    }
+
+    // Auto-stop after 1.5s of silence
+    silenceTimerRef.current = setTimeout(() => {
+      console.log(`${DEBUG_PREFIX} 🤫 Silence detected (1.5s), stopping listening...`);
+      stopListening();
+    }, 1500);
+  }, []);
 
   useSpeechRecognitionEvent('error', (event) => {
     console.error(`${DEBUG_PREFIX} ❌ Speech ERROR:`, event.error, event.message);
@@ -113,7 +134,9 @@ export function useVoiceInput(): UseVoiceInputReturn {
       ExpoSpeechRecognitionModule.start({
         lang: 'en-US',
         interimResults: true,
-        continuous: false,
+        continuous: true, // Enable continuous to handle VAD manually if needed
+
+        // iOS will use on-device dictation which usually handles end-of-speech well
       });
       logTiming('🚀 ExpoSpeechRecognitionModule.start() returned', startTime);
     } catch (e: any) {
@@ -135,6 +158,10 @@ export function useVoiceInput(): UseVoiceInputReturn {
 
     try {
       ExpoSpeechRecognitionModule.stop();
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
       logTiming('🛑 ExpoSpeechRecognitionModule.stop() returned', stopTime);
     } catch (e: any) {
       console.error(`${DEBUG_PREFIX} ❌ Failed to stop voice recognition:`, e);
