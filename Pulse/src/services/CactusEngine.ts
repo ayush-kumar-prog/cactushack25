@@ -4,7 +4,20 @@ import { locationService } from './LocationService';
 import { medGemmaService } from './MedGemmaService';
 
 class CactusEngine {
+    private isStarted: boolean = false;
+    private isStarting: boolean = false;
+
     async start() {
+        // Guard against multiple initializations
+        if (this.isStarted) {
+            console.log('[CactusEngine] System already started, skipping...');
+            return;
+        }
+        if (this.isStarting) {
+            console.log('[CactusEngine] System is already starting, skipping...');
+            return;
+        }
+        this.isStarting = true;
         console.log('[CactusEngine] Starting System...');
         const startTime = Date.now();
 
@@ -31,18 +44,30 @@ class CactusEngine {
         }
 
         if (hasAudio) {
-            await audioService.startRecording();
+            await audioService.startListening(async (uri) => {
+                console.log('[CactusEngine] Audio Chunk Received');
+                await medGemmaService.processInput({ type: 'audio', data: uri });
+            });
         } else {
             console.warn('[CactusEngine] Audio permission denied.');
         }
 
         useIncidentContext.getState().setStatus('SCANNING');
         console.log(`[CactusEngine] System Ready in ${Date.now() - startTime}ms`);
+
+        this.isStarted = true;
+        this.isStarting = false;
     }
 
     async stop() {
+        if (!this.isStarted) {
+            console.log('[CactusEngine] System not started, nothing to stop.');
+            return;
+        }
+
         console.log('[CactusEngine] Stopping System...');
-        await audioService.stopRecording();
+        await audioService.stopListening();
+        this.isStarted = false;
         console.log('[CactusEngine] System Stopped.');
     }
 
