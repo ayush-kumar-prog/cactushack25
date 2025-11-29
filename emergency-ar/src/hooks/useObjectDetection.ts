@@ -92,24 +92,28 @@ export function useObjectDetection(
     try {
       // Take a photo from the camera
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.3, // Low quality for speed
+        quality: 0.1, // Lowest quality for maximum speed
         base64: true,
         skipProcessing: true,
-      });
+        shutter: false, // Silence shutter sound
+        exif: false, // Skip EXIF data for speed
+      } as any);
 
-      if (!photo?.base64) {
-        console.log(`${DEBUG_PREFIX} No photo captured`);
+      const photoData = photo as any; // Cast to any to avoid TS inference issues with custom options
+
+      if (!photoData?.base64) {
+        // console.log(`${DEBUG_PREFIX} No photo captured`);
         return;
       }
 
-      console.log(`${DEBUG_PREFIX} 📸 Photo captured for detection`);
+      // console.log(`${DEBUG_PREFIX} 📸 Photo captured for detection`);
 
       // Send to HuggingFace API using fetch with base64
       const startTime = Date.now();
 
       try {
         // photo.base64 is already available from takePictureAsync
-        const base64Data = photo.base64;
+        const base64Data = photoData.base64;
 
         // Try HuggingFace first, fallback to demo mode on failure
         try {
@@ -125,7 +129,7 @@ export function useObjectDetection(
           });
 
           const elapsed = Date.now() - startTime;
-          console.log(`${DEBUG_PREFIX} ⏱️ HuggingFace API response: ${elapsed}ms, status: ${response.status}`);
+          // console.log(`${DEBUG_PREFIX} ⏱️ HuggingFace API response: ${elapsed}ms, status: ${response.status}`);
 
           if (!response.ok) {
             const errorText = await response.text();
@@ -141,7 +145,7 @@ export function useObjectDetection(
           }
 
           const results = await response.json();
-          console.log(`${DEBUG_PREFIX} 🎯 Real detections:`, Array.isArray(results) ? results.length : 'not array');
+          // console.log(`${DEBUG_PREFIX} 🎯 Real detections:`, Array.isArray(results) ? results.length : 'not array');
 
           // Filter and transform results
           if (Array.isArray(results)) {
@@ -160,7 +164,7 @@ export function useObjectDetection(
           }
         } catch (apiError: any) {
           // API failed - use demo mode with simulated detections
-          console.log(`${DEBUG_PREFIX} 📋 API unavailable, using demo detections`);
+          // console.log(`${DEBUG_PREFIX} 📋 API unavailable, using demo detections`);
         }
 
         // DEMO MODE: Generate realistic-looking fake detections
@@ -198,7 +202,7 @@ export function useObjectDetection(
         }
 
         if (demoDetections.length > 0) {
-          console.log(`${DEBUG_PREFIX} 🎭 Demo detections:`, demoDetections.length);
+          // console.log(`${DEBUG_PREFIX} 🎭 Demo detections:`, demoDetections.length);
           setDetections(demoDetections);
           setLastDetectionTime(Date.now());
           setError(null);
@@ -232,7 +236,7 @@ export function useObjectDetection(
     // Initial detection after a short delay
     const initialTimeout = setTimeout(() => {
       runDetection();
-    }, 1000);
+    }, 500);
 
     // Set up interval for continuous detection
     intervalRef.current = setInterval(() => {

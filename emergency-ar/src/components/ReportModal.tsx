@@ -8,9 +8,10 @@ import {
   Animated,
   Dimensions,
   Share,
+  ScrollView,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Colors, BorderRadius, Spacing } from '../theme';
+import { Colors, Spacing, BorderRadius } from '../theme';
 
 interface PatientAssessment {
   responsive?: string;
@@ -35,52 +36,28 @@ export function ReportModal({
   patientAssessment,
   emergencyTriggered,
 }: ReportModalProps) {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(100)).current;
-  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  const slideAnim = useRef(new Animated.Value(Dimensions.get('window').height)).current;
 
   useEffect(() => {
     if (visible) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 250,
-          useNativeDriver: true,
-        }),
-        Animated.spring(slideAnim, {
-          toValue: 0,
-          friction: 8,
-          tension: 65,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          friction: 8,
-          tension: 65,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        damping: 20,
+        stiffness: 90,
+      }).start();
     } else {
-      fadeAnim.setValue(0);
-      slideAnim.setValue(100);
-      scaleAnim.setValue(0.9);
+      slideAnim.setValue(Dimensions.get('window').height);
     }
   }, [visible]);
 
   const handleClose = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 100,
-        duration: 150,
-        useNativeDriver: true,
-      }),
-    ]).start(() => onClose());
+    Animated.timing(slideAnim, {
+      toValue: Dimensions.get('window').height,
+      duration: 250,
+      useNativeDriver: true,
+    }).start(() => onClose());
   };
 
   const handleShare = async () => {
@@ -124,328 +101,223 @@ Sent via EmergencyAR`;
       animationType="none"
       onRequestClose={handleClose}
     >
-      <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
+      <View style={styles.overlay}>
         <TouchableOpacity
-          style={styles.overlayTouch}
+          style={styles.backdrop}
           activeOpacity={1}
           onPress={handleClose}
         />
 
         <Animated.View
           style={[
-            styles.card,
-            {
-              transform: [
-                { translateY: slideAnim },
-                { scale: scaleAnim },
-              ],
-            },
+            styles.sheet,
+            { transform: [{ translateY: slideAnim }] }
           ]}
         >
-          {/* Header */}
+          {/* Handle Bar */}
+          <View style={styles.handleBar}>
+            <View style={styles.handle} />
+          </View>
+
           <View style={styles.header}>
-            <View style={styles.headerIcon}>
-              <View style={styles.crossIcon}>
-                <View style={styles.crossVertical} />
-                <View style={styles.crossHorizontal} />
+            <Text style={styles.title}>Report Card</Text>
+            {emergencyTriggered && (
+              <View style={styles.emergencyBadge}>
+                <Text style={styles.emergencyText}>EMERGENCY SENT</Text>
+              </View>
+            )}
+          </View>
+
+          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            {/* Vitals Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>VITALS</Text>
+              <View style={styles.vitalsList}>
+                <VitalRow label="Responsive" value={formatValue(patientAssessment.responsive)} />
+                <VitalRow label="Airway" value={formatValue(patientAssessment.airway)} />
+                <VitalRow label="Breathing" value={formatValue(patientAssessment.breathing)} />
+                <VitalRow label="Pulse" value={formatValue(patientAssessment.pulse)} />
               </View>
             </View>
-            <Text style={styles.headerTitle}>PATIENT REPORT</Text>
-            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-              <Text style={styles.closeText}>✕</Text>
+
+            {/* Details Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>DETAILS</Text>
+              <View style={styles.detailBlock}>
+                <Text style={styles.detailLabel}>Patient Description</Text>
+                <Text style={styles.detailValue}>
+                  {patientAssessment.patientDescription || 'No description available'}
+                </Text>
+              </View>
+
+              <View style={styles.detailBlock}>
+                <Text style={styles.detailLabel}>Location</Text>
+                <Text style={styles.detailValue}>Nothing Office, Kings Cross, London</Text>
+              </View>
+
+              <View style={styles.detailBlock}>
+                <Text style={styles.detailLabel}>Time</Text>
+                <Text style={styles.detailValue}>
+                  {patientAssessment.timestamp
+                    ? new Date(patientAssessment.timestamp).toLocaleTimeString()
+                    : new Date().toLocaleTimeString()}
+                </Text>
+              </View>
+            </View>
+
+            <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
+              <Text style={styles.shareText}>SHARE REPORT</Text>
             </TouchableOpacity>
-          </View>
 
-          {/* Status Banner */}
-          {emergencyTriggered && (
-            <View style={styles.statusBanner}>
-              <View style={styles.statusDot} />
-              <Text style={styles.statusText}>
-                Information shared with emergency services
-              </Text>
-            </View>
-          )}
-
-          {/* Assessment Grid */}
-          <View style={styles.assessmentGrid}>
-            <View style={styles.assessmentRow}>
-              <AssessmentItem
-                label="RESPONSIVE"
-                value={formatValue(patientAssessment.responsive)}
-              />
-              <AssessmentItem
-                label="AIRWAY"
-                value={formatValue(patientAssessment.airway)}
-              />
-            </View>
-            <View style={styles.assessmentRow}>
-              <AssessmentItem
-                label="BREATHING"
-                value={formatValue(patientAssessment.breathing)}
-              />
-              <AssessmentItem
-                label="PULSE"
-                value={formatValue(patientAssessment.pulse)}
-              />
-            </View>
-          </View>
-
-          {/* Patient Description */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>PATIENT</Text>
-            <Text style={styles.sectionValue}>
-              {patientAssessment.patientDescription || 'No description available'}
-            </Text>
-          </View>
-
-          {/* Location */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>LOCATION</Text>
-            <View style={styles.locationRow}>
-              <Text style={styles.locationPin}>📍</Text>
-              <Text style={styles.locationText}>
-                Nothing Office, Kings Cross, London
-              </Text>
-            </View>
-          </View>
-
-          {/* Timestamp */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>TIME</Text>
-            <Text style={styles.sectionValue}>
-              {patientAssessment.timestamp
-                ? new Date(patientAssessment.timestamp).toLocaleString()
-                : new Date().toLocaleString()}
-            </Text>
-          </View>
-
-          {/* Share Button */}
-          <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
-            <Text style={styles.shareIcon}>↗</Text>
-            <Text style={styles.shareText}>SHARE REPORT</Text>
-          </TouchableOpacity>
+            <View style={styles.footerSpacer} />
+          </ScrollView>
         </Animated.View>
-      </Animated.View>
+      </View>
     </Modal>
   );
 }
 
-function AssessmentItem({ label, value }: { label: string; value: string }) {
+function VitalRow({ label, value }: { label: string; value: string }) {
   const isNormal = value.toLowerCase().includes('yes') ||
-                   value.toLowerCase().includes('clear') ||
-                   value.toLowerCase().includes('present') ||
-                   value.toLowerCase().includes('normal');
-  const isCritical = value.toLowerCase().includes('no') ||
-                     value.toLowerCase().includes('absent') ||
-                     value.toLowerCase().includes('not');
+    value.toLowerCase().includes('clear') ||
+    value.toLowerCase().includes('present') ||
+    value.toLowerCase().includes('normal');
 
   return (
-    <View style={styles.assessmentItem}>
-      <Text style={styles.assessmentLabel}>{label}</Text>
-      <Text
-        style={[
-          styles.assessmentValue,
-          isNormal && styles.assessmentNormal,
-          isCritical && styles.assessmentCritical,
-        ]}
-      >
+    <View style={styles.vitalRow}>
+      <Text style={styles.vitalLabel}>{label}</Text>
+      <Text style={[
+        styles.vitalValue,
+        isNormal ? styles.valueNormal : styles.valueWarning
+      ]}>
         {value}
       </Text>
     </View>
   );
 }
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: Spacing.lg,
+    justifyContent: 'flex-end',
   },
-  overlayTouch: {
+  backdrop: {
     ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
-  card: {
-    width: SCREEN_WIDTH - Spacing.lg * 2,
-    maxWidth: 400,
+  sheet: {
     backgroundColor: Colors.surface,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    overflow: 'hidden',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    height: '85%',
+    paddingTop: Spacing.sm,
+  },
+  handleBar: {
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    backgroundColor: Colors.textTertiary,
+    borderRadius: 2,
   },
   header: {
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.lg,
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  headerIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: Colors.accent,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  crossIcon: {
-    width: 16,
-    height: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  crossVertical: {
-    position: 'absolute',
-    width: 3,
-    height: 14,
-    backgroundColor: Colors.background,
-    borderRadius: 1,
-  },
-  crossHorizontal: {
-    position: 'absolute',
-    width: 14,
-    height: 3,
-    backgroundColor: Colors.background,
-    borderRadius: 1,
-  },
-  headerTitle: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '700',
+  title: {
+    fontSize: 32,
+    fontWeight: '500',
     color: Colors.textPrimary,
-    letterSpacing: 1,
-    fontFamily: 'monospace',
-    marginLeft: Spacing.md,
+    fontFamily: 'monospace', // Nothing OS style
+    letterSpacing: -1,
   },
-  closeButton: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
+  emergencyBadge: {
+    backgroundColor: Colors.emergency,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
   },
-  closeText: {
-    fontSize: 18,
-    color: Colors.textSecondary,
-  },
-  statusBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(76, 175, 80, 0.15)',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(76, 175, 80, 0.3)',
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#4CAF50',
-    marginRight: Spacing.sm,
-  },
-  statusText: {
-    fontSize: 12,
-    color: '#4CAF50',
-    fontFamily: 'monospace',
-    fontWeight: '600',
-  },
-  assessmentGrid: {
-    padding: Spacing.lg,
-    gap: Spacing.md,
-  },
-  assessmentRow: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-  },
-  assessmentItem: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    borderRadius: 12,
-    padding: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  assessmentLabel: {
+  emergencyText: {
+    color: '#FFF',
     fontSize: 10,
-    fontWeight: '700',
-    color: Colors.textTertiary,
-    letterSpacing: 0.5,
-    fontFamily: 'monospace',
-    marginBottom: 4,
+    fontWeight: 'bold',
+    letterSpacing: 1,
   },
-  assessmentValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-    fontFamily: 'monospace',
-  },
-  assessmentNormal: {
-    color: '#4CAF50',
-  },
-  assessmentCritical: {
-    color: Colors.accent,
+  content: {
+    flex: 1,
+    paddingHorizontal: Spacing.xl,
   },
   section: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.md,
+    marginBottom: Spacing.xl,
   },
-  sectionLabel: {
-    fontSize: 10,
-    fontWeight: '700',
+  sectionTitle: {
+    fontSize: 12,
     color: Colors.textTertiary,
-    letterSpacing: 0.5,
-    fontFamily: 'monospace',
-    marginBottom: 4,
+    letterSpacing: 2,
+    marginBottom: Spacing.lg,
+    textTransform: 'uppercase',
   },
-  sectionValue: {
-    fontSize: 14,
+  vitalsList: {
+    gap: Spacing.md,
+  },
+  vitalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.surfaceElevated,
+  },
+  vitalLabel: {
+    fontSize: 16,
     color: Colors.textSecondary,
     fontFamily: 'monospace',
-    lineHeight: 20,
   },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  vitalValue: {
+    fontSize: 16,
+    fontWeight: '500',
+    fontFamily: 'monospace',
   },
-  locationPin: {
-    fontSize: 14,
-    marginRight: 6,
+  valueNormal: {
+    color: Colors.textPrimary,
   },
-  locationText: {
-    fontSize: 14,
+  valueWarning: {
+    color: Colors.emergency,
+  },
+  detailBlock: {
+    marginBottom: Spacing.md,
+  },
+  detailLabel: {
+    fontSize: 12,
+    color: Colors.textTertiary,
+    marginBottom: 4,
+    fontFamily: 'monospace',
+  },
+  detailValue: {
+    fontSize: 16,
     color: Colors.textPrimary,
     fontFamily: 'monospace',
-    fontWeight: '500',
   },
   shareButton: {
-    flexDirection: 'row',
+    backgroundColor: Colors.textPrimary,
+    paddingVertical: Spacing.lg,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.background,
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-    marginTop: Spacing.sm,
-    paddingVertical: Spacing.md,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.accent,
-    gap: Spacing.sm,
-  },
-  shareIcon: {
-    fontSize: 16,
-    color: Colors.accent,
+    marginTop: Spacing.md,
   },
   shareText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.accent,
+    color: Colors.background,
+    fontSize: 16,
+    fontWeight: '600',
     letterSpacing: 1,
     fontFamily: 'monospace',
+  },
+  footerSpacer: {
+    height: 60,
   },
 });

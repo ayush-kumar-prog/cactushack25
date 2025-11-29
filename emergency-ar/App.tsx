@@ -81,7 +81,7 @@ export default function App() {
     error: detectionError,
   } = useObjectDetection(cameraRef, {
     enabled: permission?.granted && isCameraMounted && appState === 'active',
-    intervalMs: 1200, // Run detection every 1.2 seconds
+    intervalMs: 500, // Run detection every 500ms for smoother tracking
     minConfidence: 0.4,
   });
 
@@ -252,6 +252,7 @@ export default function App() {
             ref={cameraRef}
             style={styles.camera}
             facing="back"
+            flash="off" // Explicitly disable flash
             onMountError={(e) => console.error(`${DEBUG_PREFIX} ❌ Camera mount error:`, e)}
           />
         )}
@@ -363,9 +364,10 @@ const styles = StyleSheet.create({
   },
   controlArea: {
     backgroundColor: Colors.background,
-    paddingTop: Spacing.xs,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.xxl, // Add safe area spacing
+    // borderTopWidth: 1, // Removed to get rid of white line
+    // borderTopColor: Colors.border, // Removed
   },
   transcriptContainer: {
     paddingHorizontal: Spacing.md,

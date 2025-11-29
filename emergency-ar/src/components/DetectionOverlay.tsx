@@ -45,32 +45,10 @@ function BoundingBox({
   cameraLayout: { width: number; height: number };
   index: number;
 }) {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.9)).current;
-
-  useEffect(() => {
-    // Animate in
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        friction: 8,
-        tension: 100,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, []);
-
   const { box, label, score } = detection;
 
-  // YOLOS returns box coordinates in image pixels
-  // We need to scale them to camera layout
-  // Assuming the image was captured at camera resolution
-  const scaleX = cameraLayout.width / 640; // Approximate - will adjust
+  // Calculate target dimensions
+  const scaleX = cameraLayout.width / 640;
   const scaleY = cameraLayout.height / 480;
 
   const left = box.xmin * scaleX;
@@ -78,16 +56,52 @@ function BoundingBox({
   const width = (box.xmax - box.xmin) * scaleX;
   const height = (box.ymax - box.ymin) * scaleY;
 
-  // Clamp to valid bounds
-  const clampedLeft = Math.max(0, Math.min(left, cameraLayout.width - 20));
-  const clampedTop = Math.max(0, Math.min(top, cameraLayout.height - 20));
-  const clampedWidth = Math.max(40, Math.min(width, cameraLayout.width - clampedLeft));
-  const clampedHeight = Math.max(40, Math.min(height, cameraLayout.height - clampedTop));
+  const targetLeft = Math.max(0, Math.min(left, cameraLayout.width - 20));
+  const targetTop = Math.max(0, Math.min(top, cameraLayout.height - 20));
+  const targetWidth = Math.max(40, Math.min(width, cameraLayout.width - targetLeft));
+  const targetHeight = Math.max(40, Math.min(height, cameraLayout.height - targetTop));
+
+  // Animation values
+  const leftAnim = useRef(new Animated.Value(targetLeft)).current;
+  const topAnim = useRef(new Animated.Value(targetTop)).current;
+  const widthAnim = useRef(new Animated.Value(targetWidth)).current;
+  const heightAnim = useRef(new Animated.Value(targetHeight)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Animate to new positions
+    Animated.parallel([
+      Animated.timing(leftAnim, {
+        toValue: targetLeft,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+      Animated.timing(topAnim, {
+        toValue: targetTop,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+      Animated.timing(widthAnim, {
+        toValue: targetWidth,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+      Animated.timing(heightAnim, {
+        toValue: targetHeight,
+        duration: 200,
+        useNativeDriver: false,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: false,
+      }),
+    ]).start();
+  }, [targetLeft, targetTop, targetWidth, targetHeight]);
 
   const displayLabel = LABEL_MAP[label.toLowerCase()] || label.toUpperCase();
   const confidence = Math.round(score * 100);
 
-  // Color based on detection type
   const isPersonRelated = ['person', 'face', 'hand'].includes(label.toLowerCase());
   const boxColor = isPersonRelated ? Colors.accent : Colors.textPrimary;
 
@@ -96,23 +110,20 @@ function BoundingBox({
       style={[
         styles.boundingBox,
         {
-          left: clampedLeft,
-          top: clampedTop,
-          width: clampedWidth,
-          height: clampedHeight,
+          left: leftAnim,
+          top: topAnim,
+          width: widthAnim,
+          height: heightAnim,
           borderColor: boxColor,
-          opacity: fadeAnim,
-          transform: [{ scale: scaleAnim }],
+          opacity: opacityAnim,
         },
       ]}
     >
-      {/* Corner markers for Nothing OS feel */}
       <View style={[styles.corner, styles.cornerTL, { backgroundColor: boxColor }]} />
       <View style={[styles.corner, styles.cornerTR, { backgroundColor: boxColor }]} />
       <View style={[styles.corner, styles.cornerBL, { backgroundColor: boxColor }]} />
       <View style={[styles.corner, styles.cornerBR, { backgroundColor: boxColor }]} />
 
-      {/* Label */}
       <View style={[styles.labelContainer, { backgroundColor: boxColor }]}>
         <Text style={styles.labelText}>{displayLabel}</Text>
         <Text style={styles.confidenceText}>{confidence}%</Text>
@@ -132,7 +143,6 @@ export function DetectionOverlay({
 
   return (
     <View style={styles.container} pointerEvents="none">
-      {/* Detection indicator */}
       <View style={styles.statusContainer}>
         <View style={[styles.statusDot, isDetecting && styles.statusDotActive]} />
         <Text style={styles.statusText}>
@@ -140,10 +150,9 @@ export function DetectionOverlay({
         </Text>
       </View>
 
-      {/* Bounding boxes */}
       {detections.map((detection, index) => (
         <BoundingBox
-          key={`${detection.label}-${index}-${detection.box.xmin}`}
+          key={`${detection.label}-${index}`} // Stable key to prevent re-mounting
           detection={detection}
           cameraLayout={cameraLayout}
           index={index}
