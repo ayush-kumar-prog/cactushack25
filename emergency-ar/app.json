@@ -1,0 +1,68 @@
+{
+  "expo": {
+    "name": "EmergencyAR v2",
+    "slug": "emergency-ar-v2",
+    "version": "2.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#E53935"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.hackathon.emergencyar",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app needs camera access to analyze the patient and guide you through emergency procedures.",
+        "NSMicrophoneUsageDescription": "This app needs microphone access to hear your voice commands.",
+        "NSLocationWhenInUseUsageDescription": "This app needs your location to share with emergency services.",
+        "NSSpeechRecognitionUsageDescription": "This app needs speech recognition to understand your voice commands."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#E53935"
+      },
+      "package": "com.hackathon.emergencyarv2",
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "SEND_SMS",
+        "VIBRATE"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow EmergencyAR to access your camera to analyze the patient."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow EmergencyAR to use your location to share with emergency services."
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow EmergencyAR to access your microphone for voice commands."
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Allow EmergencyAR to use the microphone for voice commands.",
+          "speechRecognitionPermission": "Allow EmergencyAR to use speech recognition."
+        }
+      ]
+    ]
+  }
+}

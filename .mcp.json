@@ -1,0 +1,60 @@
+{
+  "mcpServers": {
+    "cactus-react-docs": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://gitmcp.io/cactus-compute/cactus-react-native"
+      ]
+    },
+    "cactus-core-docs": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://gitmcp.io/cactus-compute/cactus"
+      ]
+    },
+    "react-native-vision-camera-docs": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://gitmcp.io/mrousavy/react-native-vision-camera"
+      ]
+    },
+    "viro-react-ar-docs": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://gitmcp.io/ReactVision/viro"
+      ]
+    },
+    "expo-docs": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://gitmcp.io/expo/expo"
+      ]
+    },
+    "gemini-live-react-native": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://gitmcp.io/pathakmukul/Gemini-LIVE-API-Bidirectional-Audio-in-React-Native"
+      ]
+    },
+    "gemini-live-web-console": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://gitmcp.io/google-gemini/live-api-web-console"
+      ]
+    },
+    "react-native-tts": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://gitmcp.io/ak1394/react-native-tts"
+      ]
+    }
+  }
+}

@@ -1,0 +1,1 @@
+- you must be maximally truthseeking all the time
