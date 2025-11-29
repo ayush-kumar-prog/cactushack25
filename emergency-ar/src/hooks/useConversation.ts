@@ -216,21 +216,9 @@ export function useConversation(
     console.log(`${DEBUG_PREFIX} 🚨 Starting emergency services trigger...`);
 
     try {
-      // 1. Get current location
-      console.log(`${DEBUG_PREFIX} 📍 Getting location...`);
-      let locationString = 'Location unavailable';
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status === 'granted') {
-          const location = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.High,
-          });
-          locationString = `${location.coords.latitude.toFixed(6)}, ${location.coords.longitude.toFixed(6)}`;
-          console.log(`${DEBUG_PREFIX} 📍 Location: ${locationString}`);
-        }
-      } catch (locError) {
-        console.warn(`${DEBUG_PREFIX} ⚠️ Location error:`, locError);
-      }
+      // 1. Hardcoded location for demo
+      const locationString = 'Nothing Office, Kings Cross, London';
+      console.log(`${DEBUG_PREFIX} 📍 Location: ${locationString}`);
 
       // 2. Get patient description from Gemini (if we have an image)
       let patientDesc = 'Patient description unavailable';

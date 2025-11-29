@@ -94,9 +94,9 @@ const styles = StyleSheet.create({
     right: Spacing.lg,
   },
   blurContainer: {
-    borderRadius: BorderRadius.sm,
+    borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: Colors.background, // Solid black
+    backgroundColor: 'rgba(0, 0, 0, 0.7)', // Translucent black
   },
   innerContainer: {
     padding: Spacing.lg,

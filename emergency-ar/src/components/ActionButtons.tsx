@@ -96,14 +96,14 @@ export function ActionButtons({
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.lg,
-    paddingBottom: Spacing.xxl,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    paddingBottom: Spacing.md,
     backgroundColor: Colors.background,
   },
   buttonRow: {
     flexDirection: 'row',
-    gap: Spacing.md,
+    gap: Spacing.sm,
   },
   buttonWrapper: {
     flex: 1,
@@ -118,9 +118,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.sm,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
     ...Shadows.md,
@@ -132,9 +132,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.sm,
     backgroundColor: Colors.surfaceElevated,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   },
   emergencyText: {
     color: Colors.textPrimary,
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '700',
     letterSpacing: 0.3,
   },
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
   },
   reportText: {
     color: Colors.textSecondary,
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '600',
     letterSpacing: 0.3,
   },

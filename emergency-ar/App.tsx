@@ -19,8 +19,10 @@ import {
   ActionButtons,
   VoiceButton,
   StatusPill,
+  DetectionOverlay,
+  ReportModal,
 } from './src/components';
-import { useTTS, useVoiceInput, useConversation } from './src/hooks';
+import { useTTS, useVoiceInput, useConversation, useObjectDetection } from './src/hooks';
 import { Colors, Spacing, BorderRadius } from './src/theme';
 
 const DEBUG_PREFIX = '[DEBUG:APP]';
@@ -59,9 +61,29 @@ export default function App() {
     currentMarker,
     isProcessing,
     emergencyTriggered,
+    patientAssessment,
     processUserInput,
     setInitialInstruction,
   } = useConversation(cameraRef);
+
+  // Local state - declare before useObjectDetection which depends on these
+  const [cameraLayout, setCameraLayout] = useState({ width: 0, height: 0 });
+  const [hasGreeted, setHasGreeted] = useState(false);
+  const [appState, setAppState] = useState(AppState.currentState);
+  const [cameraKey, setCameraKey] = useState(0);
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [isCameraMounted, setIsCameraMounted] = useState(false);
+
+  // Object detection with HuggingFace (runs independently)
+  const {
+    detections,
+    isDetecting,
+    error: detectionError,
+  } = useObjectDetection(cameraRef, {
+    enabled: permission?.granted && isCameraMounted && appState === 'active',
+    intervalMs: 1200, // Run detection every 1.2 seconds
+    minConfidence: 0.4,
+  });
 
   console.log(`${DEBUG_PREFIX} Hook states:`, {
     isListening,
@@ -72,14 +94,7 @@ export default function App() {
     isProcessing,
   });
 
-  // Local state
-  const [cameraLayout, setCameraLayout] = useState({ width: 0, height: 0 });
-  const [hasGreeted, setHasGreeted] = useState(false);
-  const [appState, setAppState] = useState(AppState.currentState);
-  const [cameraKey, setCameraKey] = useState(0);
-
   // Fix for camera not loading on reload - give native resource time to release
-  const [isCameraMounted, setIsCameraMounted] = useState(false);
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsCameraMounted(true);
@@ -179,7 +194,7 @@ export default function App() {
 
   const handleViewReport = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Alert.alert("Patient Report", "Report feature coming in next phase");
+    setReportModalVisible(true);
   }, []);
 
   // Permission handling - dark themed
@@ -254,6 +269,13 @@ export default function App() {
           emergencyTriggered={emergencyTriggered}
         />
 
+        {/* Object Detection Overlay - HuggingFace powered */}
+        <DetectionOverlay
+          detections={detections}
+          isDetecting={isDetecting}
+          cameraLayout={cameraLayout}
+        />
+
         {/* AR Overlay Layer */}
         <View style={styles.arOverlay} pointerEvents="none">
           {/* Marker */}
@@ -296,6 +318,14 @@ export default function App() {
           emergencyActive={emergencyTriggered}
         />
       </View>
+
+      {/* Report Modal */}
+      <ReportModal
+        visible={reportModalVisible}
+        onClose={() => setReportModalVisible(false)}
+        patientAssessment={patientAssessment}
+        emergencyTriggered={emergencyTriggered}
+      />
     </View>
   );
 }
@@ -315,6 +345,9 @@ const styles = StyleSheet.create({
   cameraContainer: {
     flex: 1,
     backgroundColor: Colors.background,
+    borderRadius: 24,
+    overflow: 'hidden',
+    margin: Spacing.sm,
   },
   camera: {
     flex: 1,
@@ -323,19 +356,20 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     borderWidth: 2,
     borderColor: Colors.borderLight,
+    borderRadius: 24,
   },
   arOverlay: {
     ...StyleSheet.absoluteFillObject,
   },
   controlArea: {
     backgroundColor: Colors.background,
-    paddingTop: Spacing.sm,
+    paddingTop: Spacing.xs,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
   },
   transcriptContainer: {
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
     alignItems: 'center',
   },
   transcriptLabel: {
@@ -347,7 +381,7 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
   },
   transcript: {
-    fontSize: 16,
+    fontSize: 12,
     color: Colors.textSecondary,
     textAlign: 'center',
     fontFamily: 'monospace',

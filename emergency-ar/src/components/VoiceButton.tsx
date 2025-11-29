@@ -280,14 +280,14 @@ function MicIcon({ isListening }: { isListening: boolean }) {
   );
 }
 
-const BUTTON_SIZE = 80;
+const BUTTON_SIZE = 56;
 const RIPPLE_SIZE = BUTTON_SIZE;
 
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 20,
+    paddingVertical: 8,
   },
   ripple: {
     position: 'absolute',
@@ -338,10 +338,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   micBody: {
-    width: 16,
-    height: 24,
+    width: 12,
+    height: 18,
     backgroundColor: Colors.textPrimary,
-    borderRadius: 8,
+    borderRadius: 6,
   },
   micBodyActive: {
     backgroundColor: Colors.accent, // Red when active
@@ -359,7 +359,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.accent,
   },
   micBase: {
-    width: 16,
+    width: 12,
     height: 2,
     backgroundColor: Colors.textPrimary,
     borderRadius: 1,
@@ -388,11 +388,11 @@ const styles = StyleSheet.create({
     opacity: 1,
   },
   label: {
-    marginTop: 12,
-    fontSize: 14,
+    marginTop: 6,
+    fontSize: 10,
     fontWeight: '500',
     color: Colors.textSecondary,
-    letterSpacing: 1,
+    letterSpacing: 0.5,
     fontFamily: 'monospace',
     textTransform: 'uppercase',
   },
