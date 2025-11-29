@@ -45,6 +45,7 @@ export default function App() {
 
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
+  const cameraContainerRef = useRef<View>(null); // For screenshot-based detection (no flash)
 
   console.log(`${DEBUG_PREFIX} Camera permission state:`, permission);
 
@@ -75,11 +76,12 @@ export default function App() {
   const [isCameraMounted, setIsCameraMounted] = useState(false);
 
   // Object detection with HuggingFace (runs independently)
+  // Uses view capture instead of camera capture to avoid flash effect
   const {
     detections,
     isDetecting,
     error: detectionError,
-  } = useObjectDetection(cameraRef, {
+  } = useObjectDetection(cameraContainerRef, {
     enabled: permission?.granted && isCameraMounted && appState === 'active',
     intervalMs: 500, // Run detection every 500ms for smoother tracking
     minConfidence: 0.4,
@@ -240,7 +242,9 @@ export default function App() {
 
       {/* Full-bleed Camera Container */}
       <View
+        ref={cameraContainerRef}
         style={styles.cameraContainer}
+        collapsable={false}
         onLayout={(e) => {
           const { width, height } = e.nativeEvent.layout;
           setCameraLayout({ width, height });

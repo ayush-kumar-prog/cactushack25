@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { CameraView } from 'expo-camera';
+import { View } from 'react-native';
+import { captureRef } from 'react-native-view-shot';
 
 const DEBUG_PREFIX = '[DEBUG:DETECTION]';
 
@@ -63,7 +64,7 @@ interface UseObjectDetectionReturn {
 }
 
 export function useObjectDetection(
-  cameraRef: React.RefObject<CameraView | null>,
+  cameraViewRef: React.RefObject<View | null>,
   options: UseObjectDetectionOptions = {}
 ): UseObjectDetectionReturn {
   const {
@@ -82,7 +83,7 @@ export function useObjectDetection(
 
   // Run object detection on a single frame
   const runDetection = useCallback(async () => {
-    if (!cameraRef.current || isRunningRef.current) {
+    if (!cameraViewRef.current || isRunningRef.current) {
       return;
     }
 
@@ -90,21 +91,19 @@ export function useObjectDetection(
     setIsDetecting(true);
 
     try {
-      // Take a photo from the camera
-      const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.1, // Lowest quality for maximum speed
-        base64: true,
-        skipProcessing: true,
-        shutter: false, // Silence shutter sound
-        exif: false, // Skip EXIF data for speed
-      } as any);
+      // Capture the camera view without triggering camera capture animation
+      const base64 = await captureRef(cameraViewRef, {
+        format: 'jpg',
+        quality: 0.3, // Low quality for speed
+        result: 'base64',
+      });
 
-      const photoData = photo as any; // Cast to any to avoid TS inference issues with custom options
-
-      if (!photoData?.base64) {
+      if (!base64) {
         // console.log(`${DEBUG_PREFIX} No photo captured`);
         return;
       }
+
+      const photoBase64 = base64;
 
       // console.log(`${DEBUG_PREFIX} 📸 Photo captured for detection`);
 
@@ -112,8 +111,8 @@ export function useObjectDetection(
       const startTime = Date.now();
 
       try {
-        // photo.base64 is already available from takePictureAsync
-        const base64Data = photoData.base64;
+        // Use the captured base64 data
+        const base64Data = photoBase64;
 
         // Try HuggingFace first, fallback to demo mode on failure
         try {
@@ -218,7 +217,7 @@ export function useObjectDetection(
       isRunningRef.current = false;
       setIsDetecting(false);
     }
-  }, [cameraRef, minConfidence]);
+  }, [cameraViewRef, minConfidence]);
 
   // Start/stop detection loop
   useEffect(() => {
